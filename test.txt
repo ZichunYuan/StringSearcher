@@ -1,0 +1,97 @@
+#Zichun Yuan
+#BY SUBMITTING THIS FILE AS PART OF MY LAB ASSIGNEMNT, I CERTIFY THAT ALL OF THE CODE FOUND
+#WITHIN THIS FILE WAS CREATED BY ME WITH NO ASSISTANCE FROM ANY PERSON OTHER THAN THE 
+#INSTRUCTOR OF THIS COURSE OR ONE OF OUR UNDERGRADUATE GRADERS. I WROTE THIS CODE BY HAND,
+#IT IS NOT MACHINE GENERATED OR TAKEN FROM MACHINE GENERATED CODE.
+
+.file "count.s"	#optional directive
+.section .rodata	#required directives for rodata
+
+Array_decimal:		#Array for range 0, 0-9
+.byte 48		#ASCII value of decimal 0	
+.byte 57		#ASCII value of decimal 9	
+Array_upper:		#Array for range 2, A-Z
+.byte 65		#ASCII value of character A
+.byte 90		#ASCII value of character Z
+Array_lower:		#Array for range 1, a-z
+.byte 97		#ASCII value of character a	
+.byte 122		#ASCII value of character z
+
+.data			#required for read write file scope data
+.globl count		#required directive for every function
+	.type count, @function #required directive
+
+.text
+count:
+	pushq %rbp		#setup stack frame
+	movq %rsp, %rbp		#setup stack frame
+	movq $Array_decimal, %rax	#store the array into register for cmov
+	movq $Array_upper, %r8		#store the array into register for cmov
+	movq $Array_lower, %r9		#store the array into register for cmov
+
+
+	cmpb $0, %sil		#to set the mode if range is 0
+	cmove %rax, %rdx	#store the comparison array in the lower byte of rdx
+	cmpb $1, %sil		#to set the mode if range is 1
+	cmove %r8, %rdx		#store the comparison array in the lower byte of rdx
+	cmpb $2, %sil		#to set the mode if range is 2
+	cmove %r9, %rdx		#store the comparison array in the lower byte of rdx
+
+	movq $0, %r8		#set up the variable that store the last condition
+	movq $0, %r9		#set up the variable that store the current condition
+	movq $0, %rcx		#set up the scratch pad for compare
+	movq $0, %rax		#set up the variable that store the counts
+
+	movq $0, %r10		#set up the variable for cmov
+	movq $1, %r11		#set up the variable for cmov
+	
+loop_start:	
+	movq (%rdx), %rcx	#move the value to the scratch pad for compare	
+	cmpb %cl, (%rdi)	#do the first comparison to see if word >= rdx[0]
+	jge second_comparison	#if true, jump to the second comparison
+	cmovl %r10, %r9 	#if false, set the current condition false
+
+from_compare:	
+	cmpq $1, %r9		#current condition check
+	je second_check		#do the second check if first check passes
+
+from_check:
+	movq %r9, %r8		#set the current condition to last
+	incq %rdi		#update the char 	
+	cmpq $0, (%rdi) 	#see if null is reached
+	jne loop_start		#loop again if null is not reached
+
+loop_end:
+	leave			#roll the stack frame		
+	ret			#return
+	.size count, .-count #required directive
+
+second_comparison:
+	incq %rdx		#compare the upper bound
+	movq (%rdx), %rcx	#move the value to the scratch pad for compare	
+	cmpb %cl, (%rdi)	#perform the second comparison, word <= rdx[1]
+	cmovle %r11, %r9	#if true, set the current condition true
+	cmovg %r10, %r9		#if false, set the current condition false
+	decq %rdx		#setup the next comparison
+	jmp from_compare	#jump back to the loop and continue
+
+second_check:
+	cmpq $0, %r8		#if current true and last word false	
+	cmove %r11, %rcx	#set up the scratch pad for add
+	cmovne %r10, %rcx	#set up the scratch pad for add
+	addq %rcx, %rax		#we have found a new word or not
+	jmp from_check
+
+
+
+
+
+
+
+
+
+
+
+
+
+
